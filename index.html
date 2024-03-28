@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>César Martínez - Developer</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+    <div class="contenedor-header">
+        <header>
+            <div class="logo">
+                <a href="#">Portfolio</a>
+            </div>
+            <nav id="nav">
+                <ul>
+                    <li><a href="#inicio" onclick="seleccionar()">INICIO</a></li>
+                    <li><a href="#sobremi" onclick="seleccionar()">SOBRE MI</a></li>
+                    <li><a href="#curriculum" onclick="seleccionar()">CURRICULUM</a></li>
+                    <li><a href="#portfolio" onclick="seleccionar()">PORTFOLIO</a></li>
+                    <li><a href="#contacto" onclick="seleccionar()">CONTACTO</a></li>
+                </ul>
+            </nav>
+            <div class="nav-responsive" onclick="mostrarOcultarMenu()">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </header>
+    </div>
+
+    <section id="inicio" class="inicio">
+        <div class="contenido-banner">
+            <div class="contenedor-img">
+                <img src="img/FotoPerfil.webp" alt="Foto de Cesar Martinez">
+            </div>
+            <h1>Cesar Martínez</h1>
+            <h2>TSU en informática </h2>
+            <h2>Software Developer</h2>
+            <div class="redes">
+                <a target="_blank" href="https://www.facebook.com/cesarmiguel.martinez.9"><i class="fa-brands fa-facebook-f"></i></a>
+                <a target="_blank" href="https://www.instagram.com/c__mmh/"><i class="fa-brands fa-instagram"></i></a>
+                <a target="_blank" href="https://github.com/CisorM"><i class="fa-brands fa-github"></i></a>
+                <a target="_blank" href="https://www.linkedin.com/in/cesarmartinez-dev/"><i class="fa-brands fa-linkedin"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <section id="sobremi" class="sobremi">
+        <div class="contenido-seccion">
+            <h2>Sobre Mí</h2>
+            <span>Hola, soy Cesar Martínez</span> 
+            <article>
+                <p>
+                    Técnico Superior Universitario Venezolano de 20 años formado en el 
+                    <a target="_blank" href="https://www.linkedin.com/company/iujo/">Instituto Universitario Jésus Obrero</a>.
+                </p>
+                <p>
+                   En los últimos años me he especializado en el Front-end para dar una mejor UX y UI a los
+                   proyectos donde he colaborado. También he realizado el Back-end de mis proyectos personales, 
+                   con herramientas como NodeJS junto a Express y SQL. 
+                </p>
+                <p>
+                    Por lo que tengo la capacidad para trabajar con diversas tecnologías y adaptarme a 
+                    las necesidades que surgan en cualquier equipo. 
+                </p>
+            </article>
+
+            <div class="fila">
+                <!-- datos personales -->
+                <div class="col">
+                    <h3>Datos Personales</h3>
+                    <ul>
+                        <li>
+                            <strong>Cumpleaños</strong>
+                            23-03-2004
+                        </li>
+                        <li>
+                            <strong>Teléfono</strong>
+                            0424-5544886
+                        </li>
+                        <li>
+                            <strong>Email</strong>
+                            cmmh200427@gmail.com
+                        </li>
+                        <li>
+                            <strong>Dirección</strong>
+                            Venezuela, Barquisimeto - Lara
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <a class="cvButton" href="Currículo.pdf" download="Curriculo.pdf">
+                Descargar CV <i class="fa-solid fa-download"></i>
+                <span class="overlay"></span>
+            </a>
+        </div>
+    </section>
+
+    <!-- SECCION CURRICULUM -->
+    <section id="curriculum" class="curriculum">
+        <div class="contenido-seccion">
+            <h2>Experiencia</h2>
+            <div class="fila">
+                <div class="col izquierda">
+                    <h3>Educación</h3>
+                    <div class="item izq">
+                        <h4>Primaria y Bachillerato</h4>
+                        <span class="casa">U. E. Colegio Aplicación</span>
+                        <span class="fecha">2011 - 2021</span>
+                        <p>Colegio privado ubicado en el este de Barquisimeto, donde tuve mi educación primaria y bachiller.</p>
+                        <div class="conectori">
+                            <div class="circuloi"></div>
+                        </div>
+                    </div>
+                    <div class="item izq">
+                        <h4>Curso de Excel y Macros | Lógica de programación</h4>
+                        <span class="casa">CadiF1</span>
+                        <span class="fecha">2021 - 2022</span>
+                        <p>Con estos cursos me adentre más en la automatización de datos debido a las macros, las cuales fueron una inspiración para escoger esta carrera.</p>
+                        <div class="conectori">
+                            <div class="circuloi"></div>
+                        </div>
+                    </div>
+                    <div class="item izq">
+                        <h4>Curso de Ingles</h4>
+                        <span class="casa">FundaUC</span>
+                        <span class="fecha">2016 - 2019</span>
+                        <p>Curso de ingles donde aprendí lo que sé actualmente y me permitió tener un nivel medio o B-2 en el idioma.</p>
+                        <div class="conectori">
+                            <div class="circuloi"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col derecha">
+                    <h3>Experiencia de trabajo</h3>
+                    <div class="item der">
+                        <h4>Front Developer</h4>
+                        <span class="casa">Doctor Pantalla</span>
+                        <span class="fecha">2022 - Act</span>
+                        <p>Me encargué de ayudar al equipo encargado de realizar una página web donde se muestre el catálogo actualizado y 
+                           una pequeña presentación de la empresa. En otro apartado, mi aporte fue hacer un reporte que controle el inventario por PDF</p>
+                        <div class="conectord">
+                            <div class="circulod"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCION PORTFOLIO -->
+    <section id="portfolio" class="portfolio">
+        <div class="contenido-seccion">
+            <h2>Proyectos</h2>
+            <div class="galeria">
+                <a class="proyecto" href="https://github.com/CisorM/ReportesLaptops" target="_blank">
+                    <div class="proyecto">
+                        <img src="img/Drpantalla.webp" alt="">
+                        <div class="overlay">
+                            <h3>Sistema de Reportes</h2>
+                            <h4>Doctor Pantalla</h3>
+                        </div>
+                    </div>
+
+                    <div class="proyectoInfo">
+                        <div class="descripcion">
+                            <p>Sistema de reportes usado dentro de la página creado para poder imprimir el inventario de una empresa</p>
+                        </div>
+                        <div class="herramientas">
+                            <span class="herramientas_container"><i class="fa-brands fa-php"></i></span>
+                            <span class="herramientas_container"><img src="./img/sql.webp" alt="sql-logo"></span>
+                            <span class="herramientas_container"><img src="./img/hmtl-5.webp" alt="html-logo"></span>                
+                        </div>
+                    </div>
+                </a>
+                <a class="proyecto" href="https://github.com/CisorM/FestivalMusical" target="_blank">
+                    <div class="proyecto">
+                        <img src="img/Festival.webp" alt="">
+                        <div class="overlay">
+                            <h3>Festival Musical</h3>
+                            <h4>Proyecto Personal</h3>
+                        </div>
+                    </div>
+
+                    <div class="proyectoInfo">
+                        <div class="descripcion">
+                            <p>Landing Page de un festival musical, para presentar los espectaculos y show en vivo</p>
+                        </div>
+                        <div class="herramientas">
+                            <span class="herramientas_container"><img src="./img/hmtl-5.webp" alt="html-logo"></span>
+                            <span class="herramientas_container"><img src="./img/css-3.webp" alt="css-logo"></span>
+                            <span class="herramientas_container"><img src="./img/js.webp" alt="javascript-logo"></span>
+                        </div>
+                    </div>
+                </a>
+                <a class="proyecto" href="https://github.com/AndresBlade/my-commerce" target="_blank">
+                    <div class="proyecto">
+                        <img src="img/mycommerce.webp" alt="">
+                        <div class="overlay">
+                            <h3>MyCommerce</h3>
+                            <h4>Proyecto Grupal</h3>
+                        </div>
+                    </div>
+
+                    <div class="proyectoInfo">
+                        <div class="descripcion">
+                            <p>Marketplace creado para solo aceptar tiendas verificadas a traves de un sistema de filtros</p>
+                        </div>
+                        <div class="herramientas">
+                            <span class="herramientas_container"><img src="./img/react.webp" alt="react-logo"></span>
+                            <span class="herramientas_container"><img src="./img/sql.webp" alt="sql-logo"></span>
+                            <span class="herramientas_container"><img src="./img/typescript.webp" alt="typescript-logo"></span>               
+                        </div>
+                    </div>
+                </a>
+                <a class="proyecto" href="https://github.com/AndresBlade/ecomoda" target="_blank">
+                    <div class="proyecto">
+                        <img src="img/ecomoda.webp" alt="">
+                        <div class="overlay">
+                            <h3>Ecomoda</h3>
+                            <h4>En desarrollo</h3>
+                        </div>
+                    </div>
+                    <div class="proyectoInfo">
+                        <div class="descripcion">
+                            <p>Sistema de Información Gerencial para una empresa de confección de moda</p>
+                        </div>
+                        <div class="herramientas">
+                            <span class="herramientas_container"><img src="./img/react.webp" alt="react-logo"></span>
+                            <span class="herramientas_container"><img src="./img/sql.webp" alt="sql-logo"></span>
+                            <span class="herramientas_container"><img src="./img/typescript.webp" alt="typescript-logo"></span>                
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCION CONTACTO -->
+    <section id="contacto" class="contacto">
+        <div class="contenido-seccion">
+            <h2>CONTACTO</h2>
+            <div class="fila">
+                <!-- Formulario -->
+                <div class="col">
+                    <input type="text" placeholder="Tú Nombre">
+                    <input type="text" placeholder="Número telefónico">
+                    <input type="text" placeholder="Dirección de correo">
+                    <input type="text" placeholder="Tema">
+                    <textarea name="" id="" cols="30" rows="10" placeholder="Mensaje"></textarea>
+                    <button>
+                        Enviar Mensaje <i class="fa-solid fa-paper-plane"></i>
+                        <span class="overlay"></span>
+                    </button>
+                </div>
+                <!-- Mapa -->
+                <div class="col">
+                    <img src="img/maps.webp" alt="">
+                    <div class="info">
+                        <ul>
+                            <li>
+                                <i class="fa-solid fa-location-dot"></i>
+                                Venezuela, Edo. Lara
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-mobile-screen"></i>
+                                Llamanos: +58 424-5544886 
+                            </li>
+                            <li>
+                                <i class="fa-solid fa-envelope"></i>
+                                Email: cmmh200427@gmail.com
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- footer -->
+    <footer>
+        <a href="#inicio" class="arriba">
+            <i class="fa-solid fa-angles-up"></i>
+        </a>
+        <div class="redes">
+            <a href="https://www.facebook.com/cesarmiguel.martinez.9"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://www.instagram.com/c__mmh/"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://github.com/CisorM"><i class="fa-brands fa-github"></i></a>
+            <a target="_blank" href="https://www.linkedin.com/in/cesarmartinez-dev/"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
