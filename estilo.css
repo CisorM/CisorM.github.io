@@ -110,6 +110,12 @@ html {
 .inicio .contenido-banner .redes a:hover {
   background-color: #1cb698;
 }
+
+.inicio .contenedor-img {
+  width: 100%;
+  object-fit: cover;
+}
+
 .sobremi {
   background-color: #1e2326;
   color: #fff;
