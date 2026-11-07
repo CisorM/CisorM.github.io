@@ -1,0 +1,40 @@
+<!doctype html>
+<!--
+  Kung Fu, No Hay Luz — runs inside an iframe on the portfolio's Arcade section.
+  game.js is a straight copy of ~/Escritorio/platanus-hack-26-venezuela-arcade/game.js.
+  To update the game, copy that file here again; nothing else needs to change.
+  The game saves its high score to localStorage when the cabinet storage is not present.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kung Fu, No Hay Luz</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0a0714;
+        overflow: hidden;
+      }
+      #game-root {
+        width: 100%;
+        height: 100%;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
+    <script src="game.js"></script>
+    <script>
+      // Take keyboard focus as soon as the game is ready, so keys work without an extra click.
+      window.addEventListener('load', () => window.focus());
+    </script>
+  </body>
+</html>

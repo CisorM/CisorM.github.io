@@ -1,0 +1,617 @@
+---
+// Standalone arcade page for Kung Fu, No Hay Luz (/arcade/ and /en/arcade/).
+// A CSS-only arcade cabinet: the screen shows an info menu, and "Play" loads the
+// Phaser game from public/arcade/kungfu in an iframe. The cabinet's joysticks and
+// buttons light up with the keys being pressed, also while the game has focus.
+import type { Copy } from '../content';
+
+interface Props {
+  t: Copy;
+}
+
+const { t } = Astro.props;
+const a = t.arcade;
+const home = t.htmlLang === 'en' ? '/en/' : '/';
+const otherArcade = t.htmlLang === 'en' ? '/arcade/' : '/en/arcade/';
+
+// Buttons on the deck, with the keyboard keys that press them (see CABINET_KEYS in game.js)
+const p1 = [['u', 'c'], ['i', 'v'], ['o', 'b'], ['j'], ['k'], ['l']];
+const p2 = [['r', 'm'], ['t', ','], ['y', '.'], ['f'], ['g'], ['h']];
+---
+
+<!doctype html>
+<html lang={t.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{a.metaTitle}</title>
+    <meta name="description" content={a.metaDescription} />
+    <link rel="alternate" hreflang="es" href={new URL('/arcade/', Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL('/en/arcade/', Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800&family=Space+Mono:wght@400;700&display=swap"
+    />
+  </head>
+  <body>
+    <header class="top">
+      <a href={home}>← {a.back}</a>
+      <a href={otherArcade}>{t.nav.otherLang}</a>
+    </header>
+
+    <main class="cabinet" data-cabinet>
+      <div class="hood" aria-hidden="true"></div>
+
+      <div class="bezel">
+        <div class="screen" data-screen>
+          <div class="menu" data-menu>
+            <h1>{a.title}</h1>
+            <div class="panel">
+              <span class="rec" aria-hidden="true"></span>
+              <p class="intro">{a.intro}</p>
+              {
+                a.blocks.map((b) => (
+                  <section>
+                    <h2>{b.title}</h2>
+                    <ul>
+                      {b.items.map((it) => (
+                        <li>{it}</li>
+                      ))}
+                    </ul>
+                  </section>
+                ))
+              }
+              <section>
+                <h2>{a.controlsTitle}</h2>
+                <ul class="controls">
+                  {
+                    a.controls.map((c) => (
+                      <li>
+                        <span class="keys">
+                          {c.keys.map((k) => (
+                            <kbd>{k}</kbd>
+                          ))}
+                        </span>
+                        <span>{c.action}</span>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+              <p class="touch-note">{a.touchNote}</p>
+            </div>
+            <div class="actions">
+              <button class="act solid" type="button" data-play data-loading={a.loading}>
+                &gt;&gt; <span>{a.play}</span> &lt;&lt;
+              </button>
+              <a class="act" href={home}>&gt;&gt; {a.back} &lt;&lt;</a>
+            </div>
+          </div>
+        </div>
+        <div class="screen-tools" data-tools hidden>
+          <button type="button" data-exit>{a.exit}</button>
+          <button type="button" data-fullscreen>{a.fullscreen} ⤢</button>
+        </div>
+      </div>
+
+      <div class="deck" aria-hidden="true">
+        <div class="player">
+          <span class="stick" data-stick="w s a d"><i></i></span>
+          <span class="pad">{p1.map((keys) => <b data-keys={keys.join(' ')}></b>)}</span>
+        </div>
+        <div class="starts">
+          <b data-keys="Enter"></b>
+          <b data-keys="2"></b>
+        </div>
+        <div class="player">
+          <span class="stick" data-stick="ArrowUp ArrowDown ArrowLeft ArrowRight"><i></i></span>
+          <span class="pad">{p2.map((keys) => <b data-keys={keys.join(' ')}></b>)}</span>
+        </div>
+      </div>
+
+      <div class="base" aria-hidden="true">
+        <span class="coin"></span>
+        <span class="brand">{a.title}</span>
+        <span class="coin"></span>
+      </div>
+    </main>
+
+    <script>
+      const cabinet = document.querySelector<HTMLElement>('[data-cabinet]')!;
+      const screen = cabinet.querySelector<HTMLElement>('[data-screen]')!;
+      const play = cabinet.querySelector<HTMLButtonElement>('[data-play]')!;
+      const tools = cabinet.querySelector<HTMLElement>('[data-tools]')!;
+      let frame: HTMLIFrameElement | null = null;
+
+      // ---- Light up the deck with the keys being pressed ----
+      const norm = (k: string) => (k.length === 1 ? k.toLowerCase() : k);
+      const buttons = [...cabinet.querySelectorAll<HTMLElement>('[data-keys]')].map((el) => ({
+        el,
+        keys: el.dataset.keys!.split(' '),
+      }));
+      const sticks = [...cabinet.querySelectorAll<HTMLElement>('[data-stick]')].map((el) => {
+        const [up, down, left, right] = el.dataset.stick!.split(' ');
+        return { el, up, down, left, right };
+      });
+      const held = new Set<string>();
+      const paint = () => {
+        for (const b of buttons) b.el.classList.toggle('is-down', b.keys.some((k) => held.has(k)));
+        for (const s of sticks) {
+          const x = (held.has(s.right) ? 1 : 0) - (held.has(s.left) ? 1 : 0);
+          const y = (held.has(s.down) ? 1 : 0) - (held.has(s.up) ? 1 : 0);
+          s.el.style.setProperty('--x', String(x));
+          s.el.style.setProperty('--y', String(y));
+        }
+      };
+      const onDown = (e: KeyboardEvent) => {
+        held.add(norm(e.key));
+        paint();
+      };
+      const onUp = (e: KeyboardEvent) => {
+        held.delete(norm(e.key));
+        paint();
+      };
+      const listen = (w: Window) => {
+        w.addEventListener('keydown', onDown);
+        w.addEventListener('keyup', onUp);
+        w.addEventListener('blur', () => {
+          held.clear();
+          paint();
+        });
+      };
+      listen(window);
+
+      // ---- Start / stop the game ----
+      play.addEventListener('click', () => {
+        if (frame) return;
+        play.disabled = true;
+        play.querySelector('span')!.textContent = play.dataset.loading ?? '';
+        frame = document.createElement('iframe');
+        // Full file path: the dev server does not map folders in public/ to their index.html
+        frame.src = '/arcade/kungfu/index.html';
+        frame.title = document.title;
+        frame.allow = 'fullscreen; autoplay';
+        frame.addEventListener('load', () => {
+          // Same origin, so the deck can also follow keys pressed inside the game
+          if (frame?.contentWindow) listen(frame.contentWindow);
+          screen.classList.add('is-playing');
+          tools.hidden = false;
+          frame?.focus();
+          frame?.contentWindow?.focus();
+        });
+        screen.append(frame);
+      });
+
+      cabinet.querySelector('[data-exit]')!.addEventListener('click', () => {
+        frame?.remove();
+        frame = null;
+        screen.classList.remove('is-playing');
+        tools.hidden = true;
+        play.disabled = false;
+        play.querySelector('span')!.textContent = play.dataset.label ?? play.querySelector('span')!.textContent;
+        play.focus();
+      });
+      play.dataset.label = play.querySelector('span')!.textContent ?? '';
+
+      cabinet.querySelector('[data-fullscreen]')!.addEventListener('click', () => {
+        frame?.requestFullscreen?.().then(() => frame?.contentWindow?.focus());
+      });
+      screen.addEventListener('pointerdown', () => frame?.contentWindow?.focus());
+    </script>
+
+    <style>
+      :root {
+        --neon: #e8ff3a;
+        --neon-dim: #b9cc2a;
+        --ink: #e9e9e1;
+        --ground: #0b0b0d;
+        --body: #121214;
+        /* Wide enough to feel big, narrow enough that the 4:3 screen fits the window height */
+        --panel-w: min(100%, 980px, calc((100svh - 9rem) * 4 / 3 + 7rem));
+        --mono: 'Space Mono', ui-monospace, Menlo, Consolas, monospace;
+        --display: 'Exo 2', system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+      body {
+        background:
+          linear-gradient(90deg, var(--neon) 0 4%, #c8dc2f 4% 6%, transparent 6% 94%, #c8dc2f 94% 96%, var(--neon) 96%),
+          var(--ground);
+        color: var(--ink);
+        font-family: var(--mono);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        width: var(--panel-w);
+        margin: 0 auto;
+        padding: 0.9rem 1.25rem;
+        font-size: 0.85rem;
+      }
+      .top a {
+        text-decoration: none;
+        opacity: 0.8;
+      }
+      .top a:hover {
+        opacity: 1;
+        color: var(--neon);
+      }
+
+      /* ---------- Cabinet body ---------- */
+      .cabinet {
+        width: var(--panel-w);
+        margin: 0 auto 2rem;
+        background: linear-gradient(#000, #0d0d0f 40%, #000);
+        border-inline: 10px solid #000;
+        box-shadow: 0 30px 80px -30px #000;
+      }
+      .hood {
+        height: clamp(1.5rem, 5vw, 3.5rem);
+        background: linear-gradient(#1a1a1d, #070708);
+        clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%);
+      }
+      .bezel {
+        padding: clamp(0.75rem, 3vw, 2rem) clamp(0.75rem, 5vw, 3.5rem) clamp(0.75rem, 2vw, 1.25rem);
+        background:
+          linear-gradient(90deg, #050506, #161618 6%, #161618 94%, #050506),
+          #111;
+      }
+
+      /* ---------- Screen ---------- */
+      .screen {
+        position: relative;
+        container-type: inline-size;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+        border: 1px solid #2a2f10;
+        background:
+          linear-gradient(#e8ff3a0d 1px, transparent 1px) 0 0 / 22px 22px,
+          linear-gradient(90deg, #e8ff3a0d 1px, transparent 1px) 0 0 / 22px 22px,
+          radial-gradient(ellipse at 50% 40%, #12140a, #050505 75%);
+        box-shadow: inset 0 0 60px #000, 0 0 0 6px #050505;
+      }
+      /* Scanlines */
+      .screen::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(#0000 0 2px, #0000001f 2px 3px);
+      }
+      /* :global because the iframe is created by the script, so Astro cannot scope it */
+      .screen :global(iframe) {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      .screen.is-playing :global(iframe) {
+        opacity: 1;
+      }
+      .screen.is-playing .menu {
+        visibility: hidden;
+      }
+      .screen.is-playing::after {
+        display: none;
+      }
+
+      .menu {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1.8cqw;
+        padding: 2.6cqw 4cqw;
+        overflow-y: auto;
+        font-size: clamp(10px, 1.8cqw, 15px);
+        line-height: 1.5;
+      }
+      h1 {
+        margin: 0;
+        text-align: center;
+        color: var(--neon);
+        font: 800 clamp(1.4rem, 6.4cqw, 3.4rem) / 1.05 var(--display);
+        letter-spacing: -0.01em;
+        text-shadow: 0 0 18px #e8ff3a66;
+      }
+      .panel {
+        position: relative;
+        display: grid;
+        gap: 1.1cqw;
+        padding: 2cqw 2.8cqw;
+        border: 3px solid var(--neon);
+        border-radius: 6px;
+        box-shadow: 0 0 16px #e8ff3a55, inset 0 0 16px #e8ff3a22;
+      }
+      .rec {
+        position: absolute;
+        top: 1.6cqw;
+        right: 1.6cqw;
+        width: 0.7em;
+        height: 0.7em;
+        background: #ff3b4e;
+        animation: rec 1.2s steps(1) infinite;
+      }
+      @keyframes rec {
+        50% {
+          opacity: 0;
+        }
+      }
+      .intro {
+        margin: 0;
+      }
+      .panel h2 {
+        margin: 0;
+        color: var(--neon);
+        font: 700 1.1em var(--mono);
+        text-transform: uppercase;
+      }
+      .panel ul {
+        margin: 0.2em 0 0;
+        padding-left: 1.2em;
+        list-style: '• ';
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35em 1.5em;
+        list-style: none !important;
+        padding-left: 0.4em !important;
+      }
+      .controls li {
+        display: grid;
+        grid-template-columns: 6.6em 1fr;
+        align-items: center;
+        gap: 0.6em;
+      }
+      .keys {
+        display: inline-flex;
+        gap: 0.2em;
+      }
+      kbd {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.5em;
+        height: 1.5em;
+        padding: 0 0.3em;
+        border: 1px solid var(--neon-dim);
+        border-radius: 3px;
+        color: var(--neon);
+        font: 700 0.8em var(--mono);
+      }
+      .touch-note {
+        display: none;
+        margin: 0;
+        color: var(--neon);
+        text-align: center;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2cqw;
+      }
+      .act {
+        min-width: 28cqw;
+        padding: 0.7em 1.4em;
+        border: 2px solid var(--neon);
+        border-radius: 3px;
+        background: transparent;
+        color: var(--neon);
+        font: 700 1em var(--mono);
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+      }
+      .act:hover,
+      .act:focus-visible {
+        box-shadow: 0 0 18px #e8ff3a66;
+        outline: none;
+      }
+      .act.solid {
+        background: var(--neon);
+        color: #0b0b0b;
+      }
+      .act:disabled {
+        cursor: progress;
+        opacity: 0.8;
+      }
+
+      .screen-tools {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 0.6rem;
+      }
+      .screen-tools[hidden] {
+        display: none;
+      }
+      .screen-tools button {
+        padding: 0.35rem 0.8rem;
+        border: 1px solid #333;
+        border-radius: 3px;
+        background: #0b0b0b;
+        color: var(--ink);
+        font: 400 0.8rem var(--mono);
+        cursor: pointer;
+      }
+      .screen-tools button:hover {
+        border-color: var(--neon);
+        color: var(--neon);
+      }
+
+      /* ---------- Control deck ---------- */
+      .deck {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 5vw, 3.5rem) clamp(1.25rem, 3vw, 2rem);
+        background: linear-gradient(#1c1c1f, #0c0c0d);
+        clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%);
+        border-top: 1px solid #2b2b2e;
+      }
+      .player {
+        display: flex;
+        align-items: flex-end;
+        gap: clamp(1rem, 4vw, 2.5rem);
+      }
+      .stick {
+        --x: 0;
+        --y: 0;
+        position: relative;
+        width: clamp(2.6rem, 7vw, 4.5rem);
+        height: clamp(4rem, 10vw, 6.5rem);
+      }
+      /* shaft */
+      .stick::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0.4rem;
+        width: 0.5rem;
+        height: 55%;
+        margin-left: -0.25rem;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #111, #3a3a3a, #111);
+        transform-origin: bottom center;
+        transform: rotate(calc(var(--x) * 14deg));
+        transition: transform 0.08s;
+      }
+      /* base plate */
+      .stick::after {
+        content: '';
+        position: absolute;
+        left: -15%;
+        right: -15%;
+        bottom: 0;
+        height: 0.8rem;
+        border-radius: 50%;
+        background: #050505;
+        box-shadow: inset 0 1px 0 #2a2a2a;
+      }
+      .stick i {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #f6ff9e, var(--neon) 35%, #8a9a12 80%);
+        box-shadow: 0 6px 14px #0009;
+        z-index: 1;
+        translate: calc(var(--x) * 22%) calc(var(--y) * 12%);
+        transition: translate 0.08s;
+      }
+      .pad {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: 0.45rem 0.7rem;
+      }
+      .deck b {
+        display: block;
+        width: clamp(1.6rem, 4.2vw, 2.6rem);
+        height: clamp(0.75rem, 1.7vw, 1.05rem);
+        border-radius: 50%;
+        background: radial-gradient(ellipse at 50% 30%, #f6ff9e, var(--neon) 45%, #7d8c10);
+        box-shadow: 0 4px 0 #4d5708, 0 6px 8px #0008;
+        transition: translate 0.06s, box-shadow 0.06s, filter 0.06s;
+      }
+      .starts {
+        display: flex;
+        gap: 0.9rem;
+        align-self: center;
+      }
+      .starts b {
+        background: radial-gradient(ellipse at 50% 30%, #fff, #d9d9d9 50%, #8f8f8f);
+        box-shadow: 0 4px 0 #5f5f5f, 0 6px 8px #0008;
+      }
+      .deck b.is-down {
+        translate: 0 3px;
+        box-shadow: 0 1px 0 #4d5708, 0 0 18px #e8ff3a;
+        filter: brightness(1.25);
+      }
+
+      /* ---------- Base ---------- */
+      .base {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1.5rem, 8vw, 6rem);
+        background: linear-gradient(160deg, #0d0d0f 40%, #050505 40%);
+      }
+      .coin {
+        width: clamp(2.2rem, 6vw, 3.6rem);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 40% 35%, #fafafa, #bdbdbd 45%, #7a7a7a 75%);
+        box-shadow: inset 0 -4px 6px #0006, 0 4px 10px #000a;
+      }
+      .brand {
+        color: #f1f1ec;
+        font: 800 clamp(1rem, 3.6vw, 2.2rem) var(--display);
+        letter-spacing: -0.01em;
+        text-align: center;
+      }
+
+      /* Phones and tablets: no keyboard. Show a note instead of "Play" and let the menu grow. */
+      @media (hover: none) and (pointer: coarse) {
+        [data-play] {
+          display: none;
+        }
+        .touch-note {
+          display: block;
+        }
+      }
+      @media (max-width: 640px) {
+        body {
+          background: var(--ground);
+        }
+        .screen {
+          aspect-ratio: auto;
+        }
+        .menu {
+          position: static;
+          font-size: 12px;
+          padding: 1rem;
+        }
+        .screen.is-playing {
+          aspect-ratio: 4 / 3;
+        }
+        .controls {
+          grid-template-columns: 1fr;
+        }
+        .deck {
+          gap: 0.5rem;
+        }
+        .pad {
+          gap: 0.35rem 0.4rem;
+        }
+      }
+    </style>
+  </body>
+</html>

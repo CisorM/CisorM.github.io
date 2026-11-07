@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import Portfolio from '../../components/Portfolio.astro';
+import { copy } from '../../content';
+
+const t = copy.en;
+---
+
+<Base t={t}>
+  <Portfolio t={t} />
+</Base>

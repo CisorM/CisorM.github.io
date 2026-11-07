@@ -1,0 +1,204 @@
+---
+// A grid of media cells, modeled on juanevillam.com.
+// Each cell stacks layers (images or videos) that crossfade in turn while the
+// grid is on screen. Videos only load and play while their cell is visible,
+// and the next layer is preloaded so each change feels seamless.
+import { Image, getImage } from 'astro:assets';
+
+export interface MediaEntry {
+  src: ImageMetadata; // the image, or the poster for a video
+  video?: string; // path under /public, e.g. /media/tripealo.mp4
+  alt: string;
+  position?: string; // object-position, defaults to top
+  fit?: 'cover' | 'contain'; // contain shows a blurred copy behind it
+}
+
+interface Props {
+  cells: MediaEntry[][];
+  width?: number;
+  hold?: number; // ms an image stays on before the next layer
+}
+
+const { cells, width = 960, hold = 4500 } = Astro.props;
+const cellWidth = Math.round(width / cells.length);
+const posters = await Promise.all(
+  cells.map((cell) =>
+    Promise.all(cell.map((m) => (m.video ? getImage({ src: m.src, width: cellWidth }).then((r) => r.src) : undefined))),
+  ),
+);
+---
+
+<div class="media-grid" data-media data-hold={hold} style={`--cols: ${cells.length}`}>
+  {
+    cells.map((cell, c) => (
+      <div class="media-cell" data-col={c}>
+        {cell.map((m, i) => (
+          <div
+            class:list={['layer', { 'is-on': i === 0 }]}
+            style={[m.position && `--pos: ${m.position}`, m.fit && `--fit: ${m.fit}`].filter(Boolean).join(';') || undefined}
+          >
+            {m.fit === 'contain' && <Image class="fill" src={m.src} width={240} alt="" aria-hidden="true" />}
+            {m.video ? (
+              <video
+                class="whole"
+                src={m.video}
+                poster={posters[c][i]}
+                aria-label={m.alt}
+                muted
+                playsinline
+                loop={cell.length === 1}
+                preload="none"
+                disablepictureinpicture
+              />
+            ) : (
+              <Image class="whole" src={m.src} alt={i === 0 ? m.alt : ''} width={cellWidth} />
+            )}
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  for (const grid of document.querySelectorAll<HTMLElement>('[data-media]')) {
+    const hold = Number(grid.dataset.hold) || 4500;
+    const cells = [...grid.querySelectorAll<HTMLElement>('.media-cell')].map((el) => ({
+      col: Number(el.dataset.col),
+      layers: [...el.querySelectorAll<HTMLElement>('.layer')],
+      i: 0,
+      timer: 0,
+      running: false,
+    }));
+    type Cell = (typeof cells)[number];
+    let visible = false;
+
+    const videoOf = (layer?: HTMLElement) => layer?.querySelector('video') ?? null;
+
+    const play = (v: HTMLVideoElement, cell: Cell) => {
+      v.preload = 'auto';
+      v.play().catch(() => {
+        // Not enough data yet: try again as soon as it can play.
+        v.addEventListener('canplay', () => cell.running && v.play().catch(() => {}), { once: true });
+      });
+    };
+
+    // Warm up the layer that comes next, so the switch never waits on the network.
+    const warm = (cell: Cell) => {
+      const next = cell.layers[(cell.i + 1) % cell.layers.length];
+      const v = videoOf(next);
+      if (v && v.preload === 'none') v.preload = 'auto';
+      for (const img of next.querySelectorAll('img')) img.loading = 'eager';
+    };
+
+    const schedule = (cell: Cell, wait: number) => {
+      clearTimeout(cell.timer);
+      const v = videoOf(cell.layers[cell.i]);
+      if (v) {
+        play(v, cell);
+        if (cell.layers.length > 1) v.onended = () => step(cell);
+      } else if (cell.layers.length > 1) {
+        cell.timer = window.setTimeout(() => step(cell), wait);
+      }
+      if (cell.layers.length > 1) warm(cell);
+    };
+
+    const step = (cell: Cell) => {
+      const old = videoOf(cell.layers[cell.i]);
+      cell.i = (cell.i + 1) % cell.layers.length;
+      const layer = cell.layers[cell.i];
+      const v = videoOf(layer);
+      if (v) v.currentTime = 0;
+
+      // Only fade once the incoming image is decoded, or after 1.2s at most.
+      let done = false;
+      const show = () => {
+        if (done) return;
+        done = true;
+        for (const l of cell.layers) l.classList.toggle('is-on', l === layer);
+        // Let the old video keep playing under the fade, then stop it.
+        if (old) setTimeout(() => old.pause(), 700);
+      };
+      const pending = [...layer.querySelectorAll('img')].filter((img) => !img.complete);
+      if (!pending.length) show();
+      else {
+        let left = pending.length;
+        for (const img of pending) img.addEventListener('load', () => --left || show(), { once: true });
+        setTimeout(show, 1200);
+      }
+      schedule(cell, hold);
+    };
+
+    const update = () => {
+      const on = visible && !document.hidden && !reduced.matches;
+      for (const cell of cells) {
+        if (on === cell.running) continue;
+        cell.running = on;
+        if (on) {
+          // Columns are offset a little so they don't all change at once.
+          schedule(cell, hold + cell.col * 900);
+        } else {
+          clearTimeout(cell.timer);
+          videoOf(cell.layers[cell.i])?.pause();
+        }
+      }
+    };
+
+    // Count as visible only when the grid is near the middle of the screen,
+    // like the reference: no video plays while it is barely peeking in.
+    new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        update();
+      },
+      { rootMargin: '-20% 0px -20% 0px' },
+    ).observe(grid);
+    document.addEventListener('visibilitychange', update);
+    reduced.addEventListener('change', update);
+  }
+</script>
+
+<style>
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    gap: 3px;
+    width: 100%;
+    height: 100%;
+    background: var(--line);
+  }
+  .media-cell {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.6s linear;
+  }
+  .layer.is-on {
+    opacity: 1;
+  }
+  .layer :global(img),
+  .layer video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+  .layer :global(.whole) {
+    object-fit: var(--fit, cover);
+    object-position: var(--pos, top);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .layer :global(.fill) {
+    object-fit: cover;
+    transform: scale(1.2);
+    filter: blur(28px) brightness(0.55);
+  }
+</style>

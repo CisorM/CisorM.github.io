@@ -1,0 +1,57 @@
+---
+import '../styles/global.css';
+import type { Copy } from '../content';
+
+interface Props {
+  t: Copy;
+}
+
+const { t } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const esUrl = new URL('/', Astro.site);
+const enUrl = new URL('/en/', Astro.site);
+---
+
+<!doctype html>
+<html lang={t.htmlLang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Content stays visible without JS; animations only run once this class is set. -->
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="es" href={esUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap"
+    />
+  </head>
+  <body>
+    <slot />
+    <script>
+      // Reveal blocks as they scroll into view, once (same idea as juanevillam.com).
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (!e.isIntersecting) continue;
+            e.target.classList.add('is-in');
+            io.unobserve(e.target);
+          }
+        },
+        { threshold: 0.2, rootMargin: '0px 0px -5% 0px' },
+      );
+      document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>
